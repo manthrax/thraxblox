@@ -1,0 +1,24 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Debug in Chrome",
+            "url": "http://localhost:3210",
+            "webRoot": "${workspaceFolder}",
+            "sourceMapPathOverrides": {
+                "webpack:///./~/*": "${workspaceFolder}/node_modules/*",
+                "webpack:///./*": "${workspaceFolder}/*",
+                "webpack:///*": "*"
+            }
+        },
+        {
+            "type": "msedge",
+            "request": "launch",
+            "name": "Debug in Edge",
+            "url": "http://localhost:3210",
+            "webRoot": "${workspaceFolder}"
+        }
+    ]
+}

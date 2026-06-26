@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced RLE Minecraft Engine</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #0f1015;
+            font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+            color: #e2e8f0;
+            user-select: none;
+        }
+
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* Sleek minimalist debug HUD inspired by Minecraft F3, but premium glassmorphic */
+        #hud {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            right: 4px;
+            z-index: 10;
+            pointer-events: none;
+            display: none;
+            /* Toggled by F3 */
+            justify-content: space-between;
+            font-family: 'Outfit', monospace;
+            font-size: 12px;
+            color: #ffffff;
+        }
+
+        .hud-left,
+        .hud-right {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            background: rgba(15, 17, 26, 0.25);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            padding: 4px 4px;
+            border-radius: 4px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .hud-left span,
+        .hud-right span {
+            color: #38bdf8;
+            font-weight: bold;
+        }
+
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 10;
+            mix-blend-mode: difference;
+        }
+
+        #crosshair::before,
+        #crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        #crosshair::before {
+            top: 4px;
+            left: 0;
+            width: 10px;
+            height: 2px;
+        }
+
+        #crosshair::after {
+            top: 0;
+            left: 4px;
+            width: 2px;
+            height: 10px;
+        }
+
+        #instructions {
+            position: absolute;
+            top: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            background: rgba(15, 17, 26, 0.35);
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 10px;
+            color: #94a3b8;
+            pointer-events: none;
+            white-space: nowrap;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .key {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 1px 4px;
+            border-radius: 2px;
+            font-family: monospace;
+            font-weight: bold;
+            margin: 0 1px;
+            border-bottom: 1.5px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Minecraft-style bottom hotbar */
+        #block-select {
+            position: absolute;
+            bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            background: rgba(15, 17, 26, 0.3);
+            backdrop-filter: blur(2px);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 4px;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: row;
+            gap: 4px;
+            pointer-events: auto;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35);
+        }
+
+        .block-option {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .block-option span {
+            display: none;
+            /* Hide label text inside the hotbar */
+        }
+
+        .block-option:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-1px);
+        }
+
+        .block-option.active {
+            background: rgba(56, 189, 248, 0.15);
+            border-color: #38bdf8;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .block-preview {
+            width: 18px;
+            height: 18px;
+            border-radius: 2px;
+            box-shadow: 0 1.5px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Hotbar Index indicator */
+        .block-option::after {
+            content: attr(data-key);
+            position: absolute;
+            bottom: 1px;
+            right: 3px;
+            font-size: 8px;
+            color: rgba(255, 255, 255, 0.4);
+            font-family: monospace;
+            font-weight: bold;
+        }
+
+        #block-option-1 .block-preview {
+            background: #557a46;
+        }
+
+        /* Grass */
+        #block-option-2 .block-preview {
+            background: #825b32;
+        }
+
+        /* Dirt */
+        #block-option-3 .block-preview {
+            background: #808080;
+        }
+
+        /* Stone */
+        #block-option-4 .block-preview {
+            background: #ab7a4e;
+        }
+
+        /* Oak Wood */
+        #block-option-5 .block-preview {
+            background: #1a5f25;
+        }
+
+        /* Leaves */
+        #block-option-6 .block-preview {
+            background: #e0f2fe;
+        }
+
+        /* Glass */
+        #block-option-7 .block-preview {
+            background: #c69c6d;
+        }
+
+        /* Oak Planks */
+        #block-option-8 .block-preview {
+            background: #6b6b6b;
+        }
+
+        /* Cobblestone */
+        #block-option-9 .block-preview {
+            background: #1b1b1b;
+        }
+
+        /* Bedrock */
+        #block-option-10 .block-preview {
+            background: #decd96;
+        }
+
+        /* Sand */
+        #block-option-11 .block-preview {
+            background: #2563eb;
+        }
+
+        /* Water */
+
+        /* Block name notification popup above hotbar */
+        #block-name-popup {
+            position: absolute;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            background: rgba(15, 17, 26, 0.45);
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #38bdf8;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            transform: translate(-50%, 5px);
+        }
+
+        #block-name-popup.visible {
+            opacity: 1;
+            transform: translate(-50%, 0);
+        }
+
+        #blocker {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(10, 11, 15, 0.1);
+            backdrop-filter: blur(1px);
+            z-index: 20;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            cursor: pointer;
+        }
+
+        #blocker h2 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+
+        #blocker p {
+            color: #94a3b8;
+            font-size: 15px;
+        }
+
+        #atlas-debug-container {
+            position: absolute;
+            top: 5vh;
+            left: 5vw;
+            width: 90vw;
+            height: 90vh;
+            background: rgba(15, 17, 26, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 12px;
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+        }
+
+        .atlas-debug-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            gap: 15px;
+        }
+
+        .atlas-debug-header h3 {
+            margin: 0;
+            color: #38bdf8;
+            font-size: 18px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .atlas-debug-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .atlas-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .atlas-btn:hover {
+            background: rgba(56, 189, 248, 0.2);
+            border-color: #38bdf8;
+        }
+
+        #atlas-zoom-val {
+            color: #94a3b8;
+            font-size: 13px;
+            font-family: monospace;
+            min-width: 45px;
+            text-align: center;
+        }
+
+        .atlas-debug-header button#atlas-debug-close {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid #ef4444;
+            color: #fca5a5;
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .atlas-debug-header button#atlas-debug-close:hover {
+            background: #ef4444;
+            color: white;
+        }
+
+        .atlas-debug-body {
+            flex: 1;
+            overflow: auto;
+            padding: 20px;
+            background: #090a0f;
+            display: block;
+        }
+
+        .atlas-debug-scroll-wrapper {
+            display: inline-block;
+            min-width: 100%;
+            text-align: center;
+        }
+
+        #atlas-debug-canvas {
+            background: #000;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.7);
+            image-rendering: pixelated;
+            display: inline-block;
+            vertical-align: top;
+            transform-origin: top center;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="canvas-container"></div>
+
+    <!-- Minecraft style F3 debug HUD -->
+    <div id="hud">
+        <div class="hud-left">
+            <div>RLE Voxel Engine v1.0.0</div>
+            <div>FPS: <span id="val-fps">--</span></div>
+            <div>Pos: <span id="val-pos">0.0, 0.0, 0.0</span></div>
+            <div>Chunks: <span id="val-chunks">0</span></div>
+        </div>
+        <div class="hud-right">
+            <div>Render: WebGL (Three.js)</div>
+            <div>Instances: <span id="val-instances">0</span></div>
+            <div>Game Mode: <span id="val-mode">Survival</span></div>
+        </div>
+    </div>
+
+    <div id="crosshair"></div>
+
+    <!-- Momentary item name indicator popup -->
+    <div id="block-name-popup">Grass Block</div>
+
+    <div id="block-select">
+        <div class="block-option active" id="block-option-1" data-id="1" data-key="1">
+            <div class="block-preview"></div>
+            <span>Grass Block</span>
+        </div>
+        <div class="block-option" id="block-option-2" data-id="2" data-key="2">
+            <div class="block-preview"></div>
+            <span>Dirt</span>
+        </div>
+        <div class="block-option" id="block-option-3" data-id="3" data-key="3">
+            <div class="block-preview"></div>
+            <span>Stone</span>
+        </div>
+        <div class="block-option" id="block-option-4" data-id="4" data-key="4">
+            <div class="block-preview"></div>
+            <span>Oak Wood</span>
+        </div>
+        <div class="block-option" id="block-option-5" data-id="5" data-key="5">
+            <div class="block-preview"></div>
+            <span>Leaves</span>
+        </div>
+        <div class="block-option" id="block-option-6" data-id="6" data-key="6">
+            <div class="block-preview"></div>
+            <span>Glass</span>
+        </div>
+        <div class="block-option" id="block-option-7" data-id="7" data-key="7">
+            <div class="block-preview"></div>
+            <span>Oak Planks</span>
+        </div>
+        <div class="block-option" id="block-option-8" data-id="8" data-key="8">
+            <div class="block-preview"></div>
+            <span>Cobblestone</span>
+        </div>
+        <div class="block-option" id="block-option-9" data-id="9" data-key="9">
+            <div class="block-preview"></div>
+            <span>Bedrock</span>
+        </div>
+        <div class="block-option" id="block-option-10" data-id="10" data-key="0">
+            <div class="block-preview"></div>
+            <span>Sand</span>
+        </div>
+        <div class="block-option" id="block-option-11" data-id="11" data-key="-">
+            <div class="block-preview"></div>
+            <span>Water</span>
+        </div>
+    </div>
+
+    <div id="blocker">
+        <h2>Click to Play</h2>
+        <p style="font-size: 13px; color: #64748b; margin-top: 4px; letter-spacing: 0.5px;">ThraxBlox by Thrax!</p>
+        <div id="instructions">
+            Move: <span class="key">W</span><span class="key">A</span><span class="key">S</span><span
+                class="key">D</span> •
+            Run: <span class="key">Shift</span> •
+            Crouch: <span class="key">C</span> •
+            Jump: <span class="key">Space</span> •
+            Debug HUD: <span class="key">F3</span> •
+            Break/Place: <span class="key">L/R Click</span>
+        </div>
+    </div>
+
+    <!-- Atlas Debug Overlay -->
+    <div id="atlas-debug-container">
+        <div class="atlas-debug-header">
+            <h3>Texture Atlas Visual Debugger (F4 to toggle)</h3>
+            <div class="atlas-debug-controls">
+                <button class="atlas-btn" id="atlas-zoom-out">-</button>
+                <span id="atlas-zoom-val">100%</span>
+                <button class="atlas-btn" id="atlas-zoom-in">+</button>
+                <button class="atlas-btn" id="atlas-zoom-reset">Reset</button>
+                <button class="atlas-btn" id="atlas-regenerate"
+                    style="border-color: #10b981; color: #a7f3d0; background: rgba(16, 185, 129, 0.15);">Regenerate
+                    Atlas</button>
+            </div>
+            <button id="atlas-debug-close">Close</button>
+        </div>
+        <div class="atlas-debug-body">
+            <div class="atlas-debug-scroll-wrapper">
+                <canvas id="atlas-debug-canvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- In-Game Console -->
+    <div id="console-container"
+        style="display: none; position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 30; width: 600px; background: rgba(10, 11, 15, 0.9); border: 1px solid #38bdf8; border-radius: 8px; padding: 12px; font-family: monospace; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
+        <div id="console-output"
+            style="height: 150px; overflow-y: auto; margin-bottom: 8px; font-size: 13px; color: #e2e8f0; line-height: 1.4; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">
+        </div>
+        <input type="text" id="console-input"
+            placeholder="Type a command (e.g. /tp 0 80 0, /reset, /help) and press Enter..."
+            style="width: 95%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); padding: 8px 12px; border-radius: 4px; color: #fff; font-family: monospace; font-size: 13px; outline: none;" />
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>

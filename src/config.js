@@ -1,0 +1,10 @@
+const CHUNK_SIZE = 32;
+
+export const CONFIG = {
+    CHUNK_SIZE: CHUNK_SIZE,
+    CHUNK_SHIFT: Math.log2(CHUNK_SIZE),
+    MAX_HEIGHT: 256,
+    LOAD_RADIUS: 12,
+    UNLOAD_RADIUS: 14,
+    CHUNKS_PER_FRAME: 3
+};
