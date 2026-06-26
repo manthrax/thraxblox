@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { SafeMouseController } from '../ui/SafeMouseController.js';
 
 export class CharacterController {
     constructor(camera, domElement, world) {
@@ -51,24 +52,10 @@ export class CharacterController {
     setupPointerLock() {
         const blocker = document.getElementById('blocker');
 
-        blocker.addEventListener('click', () => {
-            this.domElement.requestPointerLock();
-        });
-
-        document.addEventListener('pointerlockchange', () => {
-            if (document.pointerLockElement === this.domElement) {
-                blocker.style.display = 'none';
-            } else {
-                blocker.style.display = 'flex';
-            }
-        });
-
-        document.addEventListener('mousemove', (e) => {
-            if (document.pointerLockElement !== this.domElement) return;
-
+        this.mouseController = new SafeMouseController(this.domElement, (dx, dy) => {
             const sensitivity = 0.002;
-            this.yaw -= e.movementX * sensitivity;
-            this.pitch -= e.movementY * sensitivity;
+            this.yaw -= dx * sensitivity;
+            this.pitch -= dy * sensitivity;
 
             // Clamp pitch to avoid flipping over
             this.pitch = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, this.pitch));
@@ -79,6 +66,18 @@ export class CharacterController {
             this.camera.rotation.x = this.pitch;
 
             this.saveState();
+        });
+
+        blocker.addEventListener('click', () => {
+            this.mouseController.requestLock();
+        });
+
+        document.addEventListener('pointerlockchange', () => {
+            if (document.pointerLockElement === this.domElement) {
+                blocker.style.display = 'none';
+            } else {
+                blocker.style.display = 'flex';
+            }
         });
     }
 
