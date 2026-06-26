@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 
+let color = (v) => new THREE.Color(v.slice(0, -2))
 export const VoxelShader = {
     uniforms: THREE.UniformsUtils.merge([
         THREE.UniformsLib['fog'],
@@ -7,9 +8,9 @@ export const VoxelShader = {
             u_atlas: { value: null },
             u_blockFaces: { value: new Float32Array(32 * 6) },
             u_time: { value: 0.0 },
-            u_grassColor: { value: new THREE.Color(0x5c8f3e) },
-            u_waterColor: { value: new THREE.Color(0x3f76e4) },
-            u_foliageColor: { value: new THREE.Color(0x4c7f3e) },
+            u_grassColor: { value: color("#7eff87ff") },
+            u_waterColor: { value: color("#3f76e4ff") },
+            u_foliageColor: { value: color("#88ca76ff") },
             u_blockAnims: { value: new Float32Array(32 * 6) },
             u_blockTints: { value: new Float32Array(32 * 6) }
         }
@@ -139,8 +140,8 @@ export const VoxelShader = {
             // Final atlas UV coordinates
             vec2 finalUV = vec2(tx, tyWebGL) * tileSize + uvInTile;
 
-            // Sample texture
-            vec4 texColor = texture2D(u_atlas, finalUV);
+            // Sample texture using explicit gradients to prevent mipmap selection spikes at boundaries
+            vec4 texColor = textureGrad(u_atlas, finalUV, dFdx(localUV) * interior, dFdy(localUV) * interior);
 
             // Alpha test based transparency (glass and leaves)
             if (texColor.a < 0.2) discard;

@@ -46,6 +46,9 @@ export class EngineAPI {
         const textureLoader = new THREE.TextureLoader();
         this.textureAtlas = await textureLoader.loadAsync('blockatlas.webp');
         this.textureAtlas.colorSpace = THREE.SRGBColorSpace;
+        this.textureAtlas.magFilter = THREE.NearestFilter;
+        this.textureAtlas.minFilter = THREE.NearestMipmapLinearFilter;
+        this.textureAtlas.generateMipmaps = true;
 
         // Setup interaction event listeners
         this.setupInteractionEvents();
