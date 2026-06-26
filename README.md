@@ -2,6 +2,8 @@
 
 Thraxblox is a high-performance, modular voxel rendering and world management library built on top of [Three.js](https://threejs.org/) and WebGL2. It focuses on memory-efficient representation, minimal draw calls, and solving translucency/transparency sorting challenges in block-based environments.
 
+**[🎮 Live Demo](https://manthrax.github.io/thraxblox/)**
+
 ---
 
 ## Key Features & Architecture
