@@ -46,9 +46,9 @@ export class EngineAPI {
         const textureLoader = new THREE.TextureLoader();
         this.textureAtlas = await textureLoader.loadAsync('blockatlas.webp');
         this.textureAtlas.colorSpace = THREE.SRGBColorSpace;
-        this.textureAtlas.magFilter = THREE.NearestFilter;
-        this.textureAtlas.minFilter = THREE.NearestMipmapLinearFilter;
-        this.textureAtlas.generateMipmaps = true;
+        //this.textureAtlas.magFilter = THREE.NearestFilter;
+        //this.textureAtlas.minFilter = THREE.NearestMipmapLinearFilter;
+        //this.textureAtlas.generateMipmaps = true;
 
         // Setup interaction event listeners
         this.setupInteractionEvents();
@@ -397,12 +397,12 @@ export class EngineAPI {
         });
 
         // Clear input states when pointerlock is released (e.g., pausing)
-        document.addEventListener('pointerlockchange', () => {
-            if (document.pointerLockElement !== this.renderer.domElement) {
+        if (this.controller && this.controller.mouseController) {
+            this.controller.mouseController.onUnlock(() => {
                 this.mouseButtonsPressed.left = false;
                 this.mouseButtonsPressed.right = false;
-            }
-        });
+            });
+        }
 
         // Disable browser context menu so right click works seamlessly
         window.addEventListener('contextmenu', e => e.preventDefault());

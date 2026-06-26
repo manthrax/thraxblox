@@ -10,12 +10,31 @@ export class SafeMouseController {
         this.maxDelta = maxDelta;
         this.isLocked = false;
 
+        this.onLockCallbacks = [];
+        this.onUnlockCallbacks = [];
+
         // Bind contexts for event listeners
         this._onMouseMove = this._onMouseMove.bind(this);
         this._onPointerLockChange = this._onPointerLockChange.bind(this);
 
         // Setup global listener for lock state changes
         document.addEventListener('pointerlockchange', this._onPointerLockChange);
+    }
+
+    /**
+     * Register a callback to fire when pointer lock is acquired
+     */
+    onLock(callback) {
+        this.onLockCallbacks.push(callback);
+        return this;
+    }
+
+    /**
+     * Register a callback to fire when pointer lock is released
+     */
+    onUnlock(callback) {
+        this.onUnlockCallbacks.push(callback);
+        return this;
     }
 
     /**
@@ -49,9 +68,11 @@ export class SafeMouseController {
         if (document.pointerLockElement === this.element) {
             this.isLocked = true;
             document.addEventListener('mousemove', this._onMouseMove);
+            this.onLockCallbacks.forEach(cb => cb());
         } else {
             this.isLocked = false;
             document.removeEventListener('mousemove', this._onMouseMove);
+            this.onUnlockCallbacks.forEach(cb => cb());
         }
     }
 

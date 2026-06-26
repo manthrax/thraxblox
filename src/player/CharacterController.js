@@ -72,12 +72,12 @@ export class CharacterController {
             this.mouseController.requestLock();
         });
 
-        document.addEventListener('pointerlockchange', () => {
-            if (document.pointerLockElement === this.domElement) {
-                blocker.style.display = 'none';
-            } else {
-                blocker.style.display = 'flex';
-            }
+        this.mouseController.onLock(() => {
+            blocker.style.display = 'none';
+        });
+
+        this.mouseController.onUnlock(() => {
+            blocker.style.display = 'flex';
         });
     }
 
