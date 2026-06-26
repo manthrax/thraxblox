@@ -127,7 +127,7 @@ export class BlockSelection {
 
                     const previewEl = opt.querySelector('.block-preview');
                     if (previewEl) {
-                        previewEl.style.backgroundImage = "url('/blockatlas.webp')";
+                        previewEl.style.backgroundImage = "url('blockatlas.webp')";
                         previewEl.style.backgroundSize = `${scaledAtlasSize}px ${scaledAtlasSize}px`;
                         previewEl.style.backgroundPosition = `${posX}px ${posY}px`;
                         previewEl.style.imageRendering = 'pixelated';

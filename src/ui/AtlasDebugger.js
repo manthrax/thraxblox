@@ -107,12 +107,12 @@ export class AtlasDebugger {
         try {
             // Load mapping json and atlas image
             const [mappingRes, atlasImg] = await Promise.all([
-                fetch('/texture_mapping.json').then(r => r.json()),
+                fetch('texture_mapping.json').then(r => r.json()),
                 new Promise((resolve, reject) => {
                     const img = new Image();
                     img.onload = () => resolve(img);
                     img.onerror = reject;
-                    img.src = '/blockatlas.webp';
+                    img.src = 'blockatlas.webp';
                 })
             ]);
 

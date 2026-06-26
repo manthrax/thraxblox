@@ -44,7 +44,7 @@ export class EngineAPI {
     async init() {
         // Load Texture Atlas asynchronously
         const textureLoader = new THREE.TextureLoader();
-        this.textureAtlas = await textureLoader.loadAsync('/blockatlas.webp');
+        this.textureAtlas = await textureLoader.loadAsync('blockatlas.webp');
         this.textureAtlas.colorSpace = THREE.SRGBColorSpace;
 
         // Setup interaction event listeners
