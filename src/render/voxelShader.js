@@ -1,13 +1,14 @@
 import * as THREE from 'three';
 
 let color = (v) => new THREE.Color(v.slice(0, -2))
+let globalTimeUniform = { value: 0.0 }
 export const VoxelShader = {
     uniforms: THREE.UniformsUtils.merge([
         THREE.UniformsLib['fog'],
         {
             u_atlas: { value: null },
             u_blockFaces: { value: new Float32Array(32 * 6) },
-            u_time: { value: 0.0 },
+            u_time: globalTimeUniform,
             u_grassColor: { value: color("#7eff87ff") },
             u_waterColor: { value: color("#3f76e4ff") },
             u_foliageColor: { value: color("#88ca76ff") },

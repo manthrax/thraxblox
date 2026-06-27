@@ -1,6 +1,6 @@
 import { Chunk } from './Chunk.js';
 import { CONFIG } from '../config.js';
-import { BLOCK_IDS } from './BlockRegistry.js';
+import { BLOCK_IDS, isSolid, isLiquid } from './BlockRegistry.js';
 
 // Simple deterministic 2D/3D noise function to avoid external dependencies
 function createNoise2D() {
@@ -142,12 +142,17 @@ export class World {
         return changed;
     }
 
-    /**
-     * Physics helper to check if a block is solid
-     */
     isSolidAt(x, y, z) {
         const type = this.getBlockAt(x, y, z);
-        return type > 0;
+        return isSolid(type);
+    }
+
+    /**
+     * Physics helper to check if a block is a liquid
+     */
+    isLiquidAt(x, y, z) {
+        const type = this.getBlockAt(x, y, z);
+        return isLiquid(type);
     }
 
     /**

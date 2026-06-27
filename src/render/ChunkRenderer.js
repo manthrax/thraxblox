@@ -8,6 +8,82 @@ const tempCamPos = new THREE.Vector3();
 const tempCenter = new THREE.Vector3();
 
 export class ChunkRenderer {
+    static solidDepthMaterial = null;
+    static solidColorMaterial = null;
+    static transDepthMaterial = null;
+    static transColorMaterial = null;
+    static materialsList = [];
+
+    static initMaterials(textureAtlas, blockFacesConfig, blockAnimsConfig, blockTintsConfig) {
+        if (ChunkRenderer.solidDepthMaterial) return;
+
+        ChunkRenderer.solidDepthMaterial = new THREE.ShaderMaterial({
+            uniforms: THREE.UniformsUtils.clone(VoxelShader.uniforms),
+            vertexShader: VoxelShader.vertexShader,
+            fragmentShader: VoxelShader.fragmentShader,
+            fog: true,
+            transparent: false,
+            colorWrite: false,
+            depthWrite: true,
+            depthFunc: THREE.LessEqualDepth,
+            side: THREE.FrontSide
+        });
+
+        ChunkRenderer.solidColorMaterial = new THREE.ShaderMaterial({
+            uniforms: THREE.UniformsUtils.clone(VoxelShader.uniforms),
+            vertexShader: VoxelShader.vertexShader,
+            fragmentShader: VoxelShader.fragmentShader,
+            fog: true,
+            transparent: false,
+            colorWrite: true,
+            depthWrite: false,
+            depthTest: true,
+            depthFunc: THREE.EqualDepth,
+            side: THREE.FrontSide
+        });
+
+        ChunkRenderer.transDepthMaterial = new THREE.ShaderMaterial({
+            uniforms: THREE.UniformsUtils.clone(VoxelShader.uniforms),
+            vertexShader: VoxelShader.vertexShader,
+            fragmentShader: VoxelShader.fragmentShader,
+            fog: true,
+            transparent: false, // Render as opaque in prepass to ensure proper depth write
+            colorWrite: false,
+            depthWrite: true,
+            depthFunc: THREE.LessEqualDepth,
+            side: THREE.FrontSide
+        });
+
+        ChunkRenderer.transColorMaterial = new THREE.ShaderMaterial({
+            uniforms: THREE.UniformsUtils.clone(VoxelShader.uniforms),
+            vertexShader: VoxelShader.vertexShader,
+            fragmentShader: VoxelShader.fragmentShader,
+            fog: true,
+            transparent: true,
+            colorWrite: true,
+            depthWrite: false,
+            depthFunc: THREE.EqualDepth,
+            side: THREE.FrontSide,
+            polygonOffset: true,
+            polygonOffsetFactor: -1,
+            polygonOffsetUnits: -2
+        });
+
+        ChunkRenderer.materialsList = [
+            ChunkRenderer.solidDepthMaterial,
+            ChunkRenderer.solidColorMaterial,
+            ChunkRenderer.transDepthMaterial,
+            ChunkRenderer.transColorMaterial
+        ];
+
+        for (const mat of ChunkRenderer.materialsList) {
+            mat.uniforms.u_atlas.value = textureAtlas;
+            mat.uniforms.u_blockFaces.value = blockFacesConfig;
+            mat.uniforms.u_blockAnims.value = blockAnimsConfig;
+            mat.uniforms.u_blockTints.value = blockTintsConfig;
+        }
+    }
+
     constructor(chunk, scene, textureAtlas, blockFacesConfig, world) {
         this.chunk = chunk;
         this.scene = scene;
@@ -64,77 +140,6 @@ export class ChunkRenderer {
         this.transFacesAttribute = new THREE.InstancedBufferAttribute(this.transFacesArray, 1, false, 1);
         this.transGeometry.setAttribute('a_instanceFaces', this.transFacesAttribute);
 
-        // --- DISTINCT MATERIALS ---
-        this.solidDepthMaterial = new THREE.ShaderMaterial({
-            uniforms: THREE.UniformsUtils.clone(VoxelShader.uniforms),
-            vertexShader: VoxelShader.vertexShader,
-            fragmentShader: VoxelShader.fragmentShader,
-            fog: true,
-            transparent: false,
-            colorWrite: false,
-            depthWrite: true,
-            depthFunc: THREE.LessEqualDepth,
-            side: THREE.FrontSide
-        });
-
-        this.solidColorMaterial = new THREE.ShaderMaterial({
-            uniforms: THREE.UniformsUtils.clone(VoxelShader.uniforms),
-            vertexShader: VoxelShader.vertexShader,
-            fragmentShader: VoxelShader.fragmentShader,
-            fog: true,
-            transparent: false,
-            colorWrite: true,
-            depthWrite: false,
-            depthTest: true,
-            depthFunc: THREE.EqualDepth,
-            side: THREE.FrontSide
-        });
-
-        this.transDepthMaterial = new THREE.ShaderMaterial({
-            uniforms: THREE.UniformsUtils.clone(VoxelShader.uniforms),
-            vertexShader: VoxelShader.vertexShader,
-            fragmentShader: VoxelShader.fragmentShader,
-            fog: true,
-            transparent: false, // Render as opaque in prepass to ensure proper depth write
-            colorWrite: false,
-            depthWrite: true,
-            depthFunc: THREE.LessEqualDepth,
-            side: THREE.FrontSide
-        });
-
-        this.transColorMaterial = new THREE.ShaderMaterial({
-            uniforms: THREE.UniformsUtils.clone(VoxelShader.uniforms),
-            vertexShader: VoxelShader.vertexShader,
-            fragmentShader: VoxelShader.fragmentShader,
-            fog: true,
-            transparent: true,
-            colorWrite: true,
-            depthWrite: false,
-            depthFunc: THREE.EqualDepth,
-            side: THREE.FrontSide,
-            polygonOffset: true,
-            polygonOffsetFactor: -1,
-            polygonOffsetUnits: -2
-        });
-
-        // Set atlas & configurations on all materials
-        this.materialsList = [
-            this.solidDepthMaterial,
-            this.solidColorMaterial,
-            this.transDepthMaterial,
-            this.transColorMaterial
-        ];
-
-        for (const mat of this.materialsList) {
-            mat.uniforms.u_atlas.value = textureAtlas;
-            mat.uniforms.u_blockFaces.value = blockFacesConfig;
-            mat.uniforms.u_blockAnims.value = blockAnimsConfig;
-            mat.uniforms.u_blockTints.value = blockTintsConfig;
-            if (window.VoxelAPI && window.VoxelAPI.wireframeMode) {
-                mat.wireframe = true;
-            }
-        }
-
         // Set proper bounding box and sphere for frustum culling
         const size = CONFIG.CHUNK_SIZE;
         const halfSize = size / 2;
@@ -154,7 +159,7 @@ export class ChunkRenderer {
         this.transGeometry.boundingSphere = boundingSphere;
 
         // Create Meshes (using color materials by default)
-        this.solidMesh = new THREE.Mesh(this.solidGeometry, this.solidColorMaterial);
+        this.solidMesh = new THREE.Mesh(this.solidGeometry, ChunkRenderer.solidColorMaterial);
         this.solidMesh.position.set(chunk.x * size, 0, chunk.z * size);
         this.solidMesh.updateMatrix();
         this.solidMesh.updateMatrixWorld();
@@ -162,7 +167,7 @@ export class ChunkRenderer {
         this.solidMesh.layers.set(0); // Layer 0 for Solid/Opaque/Binary Transparent
         this.scene.add(this.solidMesh);
 
-        this.transMesh = new THREE.Mesh(this.transGeometry, this.transColorMaterial);
+        this.transMesh = new THREE.Mesh(this.transGeometry, ChunkRenderer.transColorMaterial);
         this.transMesh.position.set(chunk.x * size, 0, chunk.z * size);
         this.transMesh.updateMatrix();
         this.transMesh.updateMatrixWorld();
@@ -253,7 +258,7 @@ export class ChunkRenderer {
 
                     if (type > 0) { // Solid/visible block
                         const isWater = isTrulyTransparent(type);
-                        
+
                         // Top and Bottom face occlusion (consecutive runs inside the column)
                         const bottomOccluded = (currentY === 0) || (i > 0 && (isOpaque(runs[i - 1].type) || (isWater && isTrulyTransparent(runs[i - 1].type))));
                         const topOccluded = (i < runs.length - 1 && (isOpaque(runs[i + 1].type) || (isWater && isTrulyTransparent(runs[i + 1].type))));
@@ -380,17 +385,10 @@ export class ChunkRenderer {
         this.transFacesAttribute.needsUpdate = true;
     }
 
-    update(cameraPosition, timeSeconds) {
+    update(cameraPosition) {
         // If chunk blocks changed on CPU, rebuild the run representation
         if (this.chunk.dirty) {
             this.rebuildRunsList();
-        }
-
-        // Update animation time uniforms
-        if (timeSeconds !== undefined) {
-            for (const mat of this.materialsList) {
-                mat.uniforms.u_time.value = timeSeconds;
-            }
         }
     }
 
@@ -399,8 +397,5 @@ export class ChunkRenderer {
         this.scene.remove(this.transMesh);
         this.solidGeometry.dispose();
         this.transGeometry.dispose();
-        for (const mat of this.materialsList) {
-            mat.dispose();
-        }
     }
 }

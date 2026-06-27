@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { World } from '../world/World.js';
 import { CharacterController } from '../player/CharacterController.js';
-import { BLOCK_IDS, blockFacesConfig, BlockSelection } from '../world/BlockRegistry.js';
+import { BLOCK_IDS, blockFacesConfig, blockAnimsConfig, blockTintsConfig, BlockSelection } from '../world/BlockRegistry.js';
 import { ChunkRenderer } from '../render/ChunkRenderer.js';
 import { CONFIG } from '../config.js';
 
@@ -49,6 +49,14 @@ export class EngineAPI {
         //this.textureAtlas.magFilter = THREE.NearestFilter;
         //this.textureAtlas.minFilter = THREE.NearestMipmapLinearFilter;
         //this.textureAtlas.generateMipmaps = true;
+
+        // Initialize shared materials statically
+        ChunkRenderer.initMaterials(
+            this.textureAtlas,
+            blockFacesConfig,
+            blockAnimsConfig,
+            blockTintsConfig
+        );
 
         // Setup interaction event listeners
         this.setupInteractionEvents();
@@ -171,10 +179,8 @@ export class EngineAPI {
 
     toggleWireframe(enabled) {
         this.wireframeMode = enabled !== undefined ? enabled : !this.wireframeMode;
-        for (const r of this.chunkRenderers.values()) {
-            for (const mat of r.materialsList) {
-                mat.wireframe = this.wireframeMode;
-            }
+        for (const mat of ChunkRenderer.materialsList) {
+            mat.wireframe = this.wireframeMode;
         }
         return this.wireframeMode;
     }
@@ -184,7 +190,7 @@ export class EngineAPI {
         renderer.clear();
 
         const renderers = Array.from(this.chunkRenderers.values());
-
+        const { solidDepthMaterial, solidColorMaterial, transColorMaterial, transDepthMaterial } = ChunkRenderer;
         if (renderers.length == 0) {
             // Render empty/fallback
             this.scene.background = this.skyColor;
@@ -196,7 +202,7 @@ export class EngineAPI {
         this.scene.background = this.skyColor;
         this.camera.layers.set(0);
         for (let i = 0; i < renderers.length; i++) {
-            renderers[i].solidMesh.material = renderers[i].solidDepthMaterial;
+            renderers[i].solidMesh.material = solidDepthMaterial;
         }
         renderer.render(this.scene, this.camera);
 
@@ -204,34 +210,33 @@ export class EngineAPI {
         this.scene.background = null;
 
         // 2. Phase 2: Solid Equal-Depth Color Pass (Layer 0)
-        for (let i = 0; i < renderers.length; i++) {
-            renderers[i].solidMesh.material = renderers[i].solidColorMaterial;
-        }
+        for (let i = 0; i < renderers.length; i++)
+            renderers[i].solidMesh.material = solidColorMaterial;
+
         renderer.render(this.scene, this.camera);
 
         // 3. Phase 2.5: Translucent Backfaces Pass (Layer 1)
         this.camera.layers.set(1);
-        for (let i = 0; i < renderers.length; i++) {
-            const mat = renderers[i].transColorMaterial;
-            mat.side = THREE.BackSide;
-            mat.depthFunc = this.useEqualDepthForBackfaces ? THREE.EqualDepth : THREE.LessEqualDepth;
-            renderers[i].transMesh.material = mat;
-        }
+
+        transColorMaterial.side = THREE.BackSide;
+        transColorMaterial.depthFunc = this.useEqualDepthForBackfaces ? THREE.EqualDepth : THREE.LessEqualDepth;
+        for (let i = 0; i < renderers.length; i++)
+            renderers[i].transMesh.material = transColorMaterial;
+
         renderer.render(this.scene, this.camera);
 
         // 4. Phase 3a: Transparent Depth Prepass (Layer 1)
-        for (let i = 0; i < renderers.length; i++) {
-            renderers[i].transMesh.material = renderers[i].transDepthMaterial;
-        }
+        for (let i = 0; i < renderers.length; i++)
+            renderers[i].transMesh.material = transDepthMaterial;
+
         renderer.render(this.scene, this.camera);
 
         // 5. Phase 3b: Transparent Equal-Depth Alpha Pass (Layer 1)
-        for (let i = 0; i < renderers.length; i++) {
-            const mat = renderers[i].transColorMaterial;
-            mat.side = THREE.FrontSide;
-            mat.depthFunc = THREE.LessEqualDepth;
-            renderers[i].transMesh.material = mat;
-        }
+        transColorMaterial.side = THREE.FrontSide;
+        transColorMaterial.depthFunc = THREE.LessEqualDepth;
+        for (let i = 0; i < renderers.length; i++)
+            renderers[i].transMesh.material = transColorMaterial;
+
         renderer.render(this.scene, this.camera);
 
     }
@@ -439,13 +444,18 @@ export class EngineAPI {
             }
         }
 
-        // 3. Update chunk priorities & queues
+        // 3. Update global animation time uniform once per frame on shared materials
+        for (const mat of ChunkRenderer.materialsList) {
+            mat.uniforms.u_time.value = this.time;
+        }
+
+        // 4. Update chunk priorities & queues
         this.updateChunks(this.camera.position);
 
-        // 4. Update individual chunk renderers
+        // 5. Update individual chunk renderers
         let totalInstances = 0;
         for (const chunkRenderer of this.chunkRenderers.values()) {
-            chunkRenderer.update(this.camera.position, this.time);
+            chunkRenderer.update(this.camera.position);
             totalInstances += chunkRenderer.instanceCount;
         }
         this.totalInstances = totalInstances;

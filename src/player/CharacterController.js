@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { SafeMouseController } from '../ui/SafeMouseController.js';
+import { BLOCK_IDS } from '../world/BlockRegistry.js';
 
 export class CharacterController {
     constructor(camera, domElement, world) {
@@ -151,6 +152,7 @@ export class CharacterController {
         // Compute speed and crouch adjustments
         let targetEyeHeight = this.eyeHeight;
         let currentSpeed = this.speed;
+        const inWater = this.isInWater();
 
         if (this.isFlying) {
             currentSpeed = this.speed * 4.0; // 4x base fly speed
@@ -159,6 +161,13 @@ export class CharacterController {
             }
             // Rotate the movement vector in full 3D space by the camera's rotation
             moveVector.applyQuaternion(this.camera.quaternion);
+        } else if (inWater) {
+            currentSpeed = this.speed * 0.45; // 45% base speed in water
+            if (this.keys.sprint) {
+                currentSpeed = this.speed * 0.65; // Sprint swimming
+            }
+            // Rotate the movement vector horizontally by the camera's Y rotation
+            moveVector.applyAxisAngle(new THREE.Vector3(0, 1, 0), this.camera.rotation.y);
         } else {
             if (this.keys.sprint) {
                 currentSpeed = this.speed * 1.6;
@@ -182,6 +191,18 @@ export class CharacterController {
             this.velocity.y = moveVector.y * currentSpeed;
             if (this.keys.jump) this.velocity.y += currentSpeed;
             if (this.keys.sneak) this.velocity.y -= currentSpeed;
+        } else if (inWater) {
+            // Sinking/drag physics in water
+            this.velocity.y -= 4.0 * dt; // Gentle gravity in water
+            this.velocity.y = Math.max(-1.5, this.velocity.y); // Terminal sinking speed
+
+            // Swim control
+            if (this.keys.jump) {
+                this.velocity.y = 2.5; // Swim up
+            }
+            if (this.keys.sneak) {
+                this.velocity.y = -2.5; // Swim down
+            }
         } else {
             // Gravity
             this.velocity.y -= this.gravity * dt;
@@ -327,6 +348,17 @@ export class CharacterController {
             minZ: this.position.z - this.halfWidth,
             maxZ: this.position.z + this.halfWidth
         };
+    }
+
+    isInWater() {
+        const px = Math.floor(this.position.x);
+        const py = Math.floor(this.position.y + 0.5); // Leg level
+        const pz = Math.floor(this.position.z);
+        
+        const feetBlock = this.world.getBlockAt(px, py, pz);
+        const headBlock = this.world.getBlockAt(px, Math.floor(this.position.y + this.eyeHeight), pz);
+        
+        return feetBlock === BLOCK_IDS.WATER || headBlock === BLOCK_IDS.WATER;
     }
 
     intersects(a, b) {

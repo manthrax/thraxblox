@@ -27,6 +27,16 @@ export function isOpaque(blockId) {
            id !== BLOCK_IDS.WATER;
 }
 
+export function isSolid(blockId) {
+    const id = Number(blockId);
+    return id !== BLOCK_IDS.AIR && id !== BLOCK_IDS.WATER;
+}
+
+export function isLiquid(blockId) {
+    const id = Number(blockId);
+    return id === BLOCK_IDS.WATER;
+}
+
 // Faces order: +X, -X, +Y (Top), -Y (Bottom), +Z, -Z
 export const blockFacesConfig = new Float32Array(32 * 6);
 export const blockAnimsConfig = new Float32Array(32 * 6);
