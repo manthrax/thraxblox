@@ -232,12 +232,12 @@ export class EngineAPI {
 
         // 3. Phase 2.5: Translucent Backfaces Pass (Layer 1)
         this.camera.layers.set(1);
-
-        for (let i = 0; i < renderers.length; i++)
-            renderers[i].transMesh.material = transColorBackMaterial;
-
-        renderer.render(this.scene, this.camera);
-
+        /*
+                for (let i = 0; i < renderers.length; i++)
+                    renderers[i].transMesh.material = transColorBackMaterial;
+        
+                renderer.render(this.scene, this.camera);
+        */
         // 4. Phase 3a: Transparent Depth Prepass (Layer 1)
         for (let i = 0; i < renderers.length; i++)
             renderers[i].transMesh.material = transDepthMaterial;

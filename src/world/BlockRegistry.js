@@ -16,25 +16,22 @@ export const BLOCK_IDS = {
 };
 
 export function isTrulyTransparent(blockId) {
-    return Number(blockId) === BLOCK_IDS.WATER;
+    return blockId === BLOCK_IDS.WATER;
 }
 
 export function isOpaque(blockId) {
-    const id = Number(blockId);
-    return id !== BLOCK_IDS.AIR &&
-           id !== BLOCK_IDS.LEAVES &&
-           id !== BLOCK_IDS.GLASS &&
-           id !== BLOCK_IDS.WATER;
+    return blockId !== BLOCK_IDS.AIR &&
+        blockId !== BLOCK_IDS.LEAVES &&
+        blockId !== BLOCK_IDS.GLASS &&
+        blockId !== BLOCK_IDS.WATER;
 }
 
 export function isSolid(blockId) {
-    const id = Number(blockId);
-    return id !== BLOCK_IDS.AIR && id !== BLOCK_IDS.WATER;
+    return blockId !== BLOCK_IDS.AIR && blockId !== BLOCK_IDS.WATER;
 }
 
 export function isLiquid(blockId) {
-    const id = Number(blockId);
-    return id === BLOCK_IDS.WATER;
+    return blockId === BLOCK_IDS.WATER;
 }
 
 // Faces order: +X, -X, +Y (Top), -Y (Bottom), +Z, -Z
