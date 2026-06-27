@@ -308,15 +308,21 @@ export class World {
         return true;
     }
 
-    /**
-     * Spawns trees (Phase 2) and transitions the chunk state to 'decorated'.
-     */
     decorateChunk(cx, cz, api) {
         const chunk = this.chunks.get(this.getChunkKey(cx, cz));
         if (chunk && chunk.generationPhase === 'terrain') {
             this.spawnTreesInChunk(cx, cz, api);
             chunk.generationPhase = 'decorated';
             chunk.dirty = true;
+
+            // Mark adjacent chunks dirty so they rebuild and cull boundary faces
+            for (let dx = -1; dx <= 1; dx++) {
+                for (let dz = -1; dz <= 1; dz++) {
+                    if (dx === 0 && dz === 0) continue;
+                    const adj = this.chunks.get(this.getChunkKey(cx + dx, cz + dz));
+                    if (adj) adj.dirty = true;
+                }
+            }
         }
     }
 }

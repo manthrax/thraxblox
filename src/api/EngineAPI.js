@@ -37,6 +37,21 @@ export class EngineAPI {
         this.mouseButtonsPressed = { left: false, right: false };
         this.rayDirection = new THREE.Vector3();
 
+        // Underwater camera overlay plane
+        const overlayGeom = new THREE.PlaneGeometry(2, 2);
+        const overlayMat = new THREE.MeshBasicMaterial({
+            color: 0x103070,
+            transparent: true,
+            opacity: 0.35,
+            depthTest: false,
+            depthWrite: false
+        });
+        this.underwaterPlane = new THREE.Mesh(overlayGeom, overlayMat);
+        this.underwaterPlane.position.set(0, 0, -0.11); // Place just in front of near clipping plane
+        this.underwaterPlane.visible = false;
+        this.camera.add(this.underwaterPlane);
+        this.scene.add(this.camera);
+
         // Expose API globally
         window.VoxelAPI = this;
     }
@@ -190,7 +205,7 @@ export class EngineAPI {
         renderer.clear();
 
         const renderers = Array.from(this.chunkRenderers.values());
-        const { solidDepthMaterial, solidColorMaterial, transColorMaterial, transDepthMaterial } = ChunkRenderer;
+        const { solidDepthMaterial, solidColorMaterial, transColorBackMaterial, transColorFrontMaterial, transDepthMaterial } = ChunkRenderer;
         if (renderers.length == 0) {
             // Render empty/fallback
             this.scene.background = this.skyColor;
@@ -201,9 +216,9 @@ export class EngineAPI {
         // 1. Phase 1: Solid Depth Prepass (Layer 0)
         this.scene.background = this.skyColor;
         this.camera.layers.set(0);
-        for (let i = 0; i < renderers.length; i++) {
+        for (let i = 0; i < renderers.length; i++)
             renderers[i].solidMesh.material = solidDepthMaterial;
-        }
+
         renderer.render(this.scene, this.camera);
 
         // Disable background so subsequent passes do not overwrite the color/depth buffers
@@ -218,10 +233,8 @@ export class EngineAPI {
         // 3. Phase 2.5: Translucent Backfaces Pass (Layer 1)
         this.camera.layers.set(1);
 
-        transColorMaterial.side = THREE.BackSide;
-        transColorMaterial.depthFunc = this.useEqualDepthForBackfaces ? THREE.EqualDepth : THREE.LessEqualDepth;
         for (let i = 0; i < renderers.length; i++)
-            renderers[i].transMesh.material = transColorMaterial;
+            renderers[i].transMesh.material = transColorBackMaterial;
 
         renderer.render(this.scene, this.camera);
 
@@ -232,10 +245,8 @@ export class EngineAPI {
         renderer.render(this.scene, this.camera);
 
         // 5. Phase 3b: Transparent Equal-Depth Alpha Pass (Layer 1)
-        transColorMaterial.side = THREE.FrontSide;
-        transColorMaterial.depthFunc = THREE.LessEqualDepth;
         for (let i = 0; i < renderers.length; i++)
-            renderers[i].transMesh.material = transColorMaterial;
+            renderers[i].transMesh.material = transColorFrontMaterial;
 
         renderer.render(this.scene, this.camera);
 
@@ -459,5 +470,44 @@ export class EngineAPI {
             totalInstances += chunkRenderer.instanceCount;
         }
         this.totalInstances = totalInstances;
+
+        // Check if camera is submerged in water/liquid
+        const camX = Math.floor(this.camera.position.x);
+        const camY = Math.floor(this.camera.position.y);
+        const camZ = Math.floor(this.camera.position.z);
+        const isSubmerged = this.world.isLiquidAt(camX, camY, camZ);
+
+        if (isSubmerged) {
+            if (!this.wasSubmerged) {
+                this.wasSubmerged = true;
+                this.underwaterPlane.visible = true;
+                if (this.scene.fog) {
+                    this.scene.fog.color.setHex(0x103070);
+                    if (this.scene.fog.isFog) {
+                        this.scene.fog.near = 1.0;
+                        this.scene.fog.far = 12.0;
+                    } else if (this.scene.fog.isFogExp2) {
+                        this.scene.fog.density = 0.15;
+                    }
+                }
+                this.skyColor.setHex(0x103070);
+            }
+        } else {
+            if (this.wasSubmerged) {
+                this.wasSubmerged = false;
+                this.underwaterPlane.visible = false;
+                const maxFogDist = CONFIG.CHUNK_SIZE * CONFIG.LOAD_RADIUS;
+                if (this.scene.fog) {
+                    this.scene.fog.color.setHex(0x7dd3fc);
+                    if (this.scene.fog.isFog) {
+                        this.scene.fog.near = maxFogDist * 0.55;
+                        this.scene.fog.far = maxFogDist * 0.8;
+                    } else if (this.scene.fog.isFogExp2) {
+                        this.scene.fog.density = 3.0 / maxFogDist;
+                    }
+                }
+                this.skyColor.setHex(0x7dd3fc);
+            }
+        }
     }
 }

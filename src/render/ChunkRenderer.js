@@ -11,7 +11,8 @@ export class ChunkRenderer {
     static solidDepthMaterial = null;
     static solidColorMaterial = null;
     static transDepthMaterial = null;
-    static transColorMaterial = null;
+    static transColorBackMaterial = null;
+    static transColorFrontMaterial = null;
     static materialsList = [];
 
     static initMaterials(textureAtlas, blockFacesConfig, blockAnimsConfig, blockTintsConfig) {
@@ -54,7 +55,7 @@ export class ChunkRenderer {
             side: THREE.FrontSide
         });
 
-        ChunkRenderer.transColorMaterial = new THREE.ShaderMaterial({
+        ChunkRenderer.transColorBackMaterial = new THREE.ShaderMaterial({
             uniforms: THREE.UniformsUtils.clone(VoxelShader.uniforms),
             vertexShader: VoxelShader.vertexShader,
             fragmentShader: VoxelShader.fragmentShader,
@@ -62,7 +63,22 @@ export class ChunkRenderer {
             transparent: true,
             colorWrite: true,
             depthWrite: false,
-            depthFunc: THREE.EqualDepth,
+            depthFunc: THREE.LessEqualDepth,
+            side: THREE.BackSide,
+            polygonOffset: true,
+            polygonOffsetFactor: -1,
+            polygonOffsetUnits: -2
+        });
+
+        ChunkRenderer.transColorFrontMaterial = new THREE.ShaderMaterial({
+            uniforms: THREE.UniformsUtils.clone(VoxelShader.uniforms),
+            vertexShader: VoxelShader.vertexShader,
+            fragmentShader: VoxelShader.fragmentShader,
+            fog: true,
+            transparent: true,
+            colorWrite: true,
+            depthWrite: false,
+            depthFunc: THREE.LessEqualDepth,
             side: THREE.FrontSide,
             polygonOffset: true,
             polygonOffsetFactor: -1,
@@ -73,7 +89,8 @@ export class ChunkRenderer {
             ChunkRenderer.solidDepthMaterial,
             ChunkRenderer.solidColorMaterial,
             ChunkRenderer.transDepthMaterial,
-            ChunkRenderer.transColorMaterial
+            ChunkRenderer.transColorBackMaterial,
+            ChunkRenderer.transColorFrontMaterial
         ];
 
         for (const mat of ChunkRenderer.materialsList) {
@@ -167,7 +184,7 @@ export class ChunkRenderer {
         this.solidMesh.layers.set(0); // Layer 0 for Solid/Opaque/Binary Transparent
         this.scene.add(this.solidMesh);
 
-        this.transMesh = new THREE.Mesh(this.transGeometry, ChunkRenderer.transColorMaterial);
+        this.transMesh = new THREE.Mesh(this.transGeometry, ChunkRenderer.transColorFrontMaterial);
         this.transMesh.position.set(chunk.x * size, 0, chunk.z * size);
         this.transMesh.updateMatrix();
         this.transMesh.updateMatrixWorld();
