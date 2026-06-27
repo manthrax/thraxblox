@@ -52,6 +52,14 @@ export class EngineAPI {
         this.camera.add(this.underwaterPlane);
         this.scene.add(this.camera);
 
+        // Block selection outline wireframe helper (Minecraft-style)
+        const outlineGeom = new THREE.BoxGeometry(1.005, 1.005, 1.005);
+        const edges = new THREE.EdgesGeometry(outlineGeom);
+        const outlineMat = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 });
+        this.blockOutline = new THREE.LineSegments(edges, outlineMat);
+        this.blockOutline.visible = false;
+        this.scene.add(this.blockOutline);
+
         // Expose API globally
         window.VoxelAPI = this;
     }
@@ -508,6 +516,17 @@ export class EngineAPI {
                 }
                 this.skyColor.setHex(0x7dd3fc);
             }
+        }
+
+        // Selection outline raycasting (Minecraft style)
+        this.camera.getWorldDirection(this.rayDirection);
+        const selectionRange = 6.0; // Reach distance in blocks
+        const rayResult = this.raycast(this.camera.position, this.rayDirection, selectionRange);
+        if (rayResult.hit) {
+            this.blockOutline.position.set(rayResult.x + 0.5, rayResult.y + 0.5, rayResult.z + 0.5);
+            this.blockOutline.visible = true;
+        } else {
+            this.blockOutline.visible = false;
         }
     }
 }

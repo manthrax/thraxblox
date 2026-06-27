@@ -81,11 +81,13 @@ function animate() {
     // --- MANUAL MULTI-PASS RENDER LOOP ---
     api.render();
 
+    const frameTimeMS = (performance.now() - time);
+
     // Update HUD Metrics
     frames++;
     fpsTimer += dt;
     if (fpsTimer >= 1.0) {
-        valFps.textContent = `${Math.round(frames / fpsTimer)}`;
+        valFps.textContent = `${Math.round(frames / fpsTimer)} / ${frameTimeMS.toFixed(0)}ms`;
         valInstances.textContent = `${api.totalInstances}`;
         valMode.textContent = api.controller.gameMode.toUpperCase() + (api.controller.isFlying ? ' (FLY)' : '');
         valChunks.textContent = `${api.chunkRenderers.size}`;
