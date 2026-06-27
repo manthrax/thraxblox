@@ -1,6 +1,6 @@
 # Thraxblox
 
-Thraxblox is a high-performance, modular voxel rendering and world management library built on top of [Three.js](https://threejs.org/) and WebGL2. It focuses on memory-efficient representation, minimal draw calls, and solving translucency/transparency sorting challenges in block-based environments.
+Thraxblox is yet another, modular voxel rendering and world management library built on top of [Three.js](https://threejs.org/) (WebGL2).
 
 **[🎮 Live Demo](https://manthrax.github.io/thraxblox/)**
 
@@ -9,7 +9,7 @@ Thraxblox is a high-performance, modular voxel rendering and world management li
 ## Key Features & Architecture
 
 ### 1. Vertical Run-Length Encoding (RLE)
-Rather than representing voxels in a 3D grid array, Thraxblox represents chunks as columns of vertically stored runs via [RLEColumn](src/world/RLEColumn.js).
+Thraxblox represents chunks as columns of vertically stored runs via [RLEColumn](src/world/RLEColumn.js).
 * **Memory Optimization:** Reduces memory footprint significantly compared to traditional uncompressed 3D arrays.
 * **Continuous Vertical Runs:** Multiple vertical layers of the same block type are compressed into a single run entry containing the block type and height.
 
@@ -20,7 +20,7 @@ Instead of drawing single voxels as individual meshes or generating complex, sta
 
 ### 3. Bitwise Face-Occlusion Culling
 To prevent rendering internal faces, Thraxblox evaluates adjacent columns to determine which faces are visible.
-* **Occlusion Masking:** Run intersections are calculated on the CPU to create a bitmask (stored in the `a_instanceFaces` attribute) for the 6 cube faces (+X, -X, +Y, -Y, +Z, -Z).
+* **Masked face Occlusion:** Run intersections are calculated on the CPU to create a bitmask (stored in the `a_instanceFaces` attribute) for the 6 cube faces (+X, -X, +Y, -Y, +Z, -Z).
 * **Vertex-Shader Culling:** The vertex shader reads this mask. If a face is marked as occluded, the vertex coordinates are collapsed to zero, avoiding rasterization and pixel shading of hidden polygons.
 
 ### 4. Custom Voxel Shader & Dynamic Texturing
@@ -31,22 +31,6 @@ A unified WebGL2 shader ([voxelShader.js](src/render/voxelShader.js)) handles te
 
 ### 5. 3-Phase / 5-Pass Layered Renderer
 Handling translucency (e.g., water) alongside solid geometry is a common challenge in voxel renderers due to back-to-front sorting requirements. Thraxblox implements a custom rendering loop in [EngineAPI.js](src/api/EngineAPI.js) to resolve this:
-
-```mermaid
-graph TD
-    A[Start Frame] --> B[Pass 1: Solid Depth Prepass]
-    B --> C[Pass 2: Solid Color Pass]
-    C --> D[Pass 3: Translucent Backfaces Pass]
-    D --> E[Pass 4: Transparent Depth Prepass]
-    E --> F[Pass 5: Transparent Alpha Pass]
-    F --> G[End Frame]
-
-    style B fill:#f9f,stroke:#333,stroke-width:2px
-    style C fill:#bbf,stroke:#333,stroke-width:2px
-    style D fill:#fbb,stroke:#333,stroke-width:2px
-    style E fill:#f9f,stroke:#333,stroke-width:2px
-    style F fill:#bfb,stroke:#333,stroke-width:2px
-```
 
 * **Pass 1: Solid Depth Prepass (Layer 0)** – Renders solid geometry writing only to the depth buffer (`colorWrite: false`), optimizing hardware early-Z rejection.
 * **Pass 2: Solid Color Pass (Layer 0)** – Renders solid color outputs with `depthWrite` disabled and `depthFunc: EqualDepth`.
@@ -101,4 +85,3 @@ engine.registerBlockBehavior(BLOCK_IDS.DIRT, {
 ---
 
 ## License
-MIT

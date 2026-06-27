@@ -36,24 +36,24 @@ export class RLEColumn {
      */
     setBlock(y, type) {
         if (y < 0 || y >= this.maxHeight) return false;
-        
+
         let currentY = 0;
         const runs = this.runs;
         const count = runs.length;
-        
+
         for (let i = 0; i < count; i++) {
             const run = runs[i];
             const nextY = currentY + run.length;
-            
+
             if (y < nextY) {
                 if (run.type === type) {
                     return false; // No change
                 }
-                
+
                 // We need to split this run.
                 const preLength = y - currentY;
                 const postLength = nextY - y - 1;
-                
+
                 const newRuns = [];
                 // Add the preceding part of the run
                 if (preLength > 0) {
@@ -65,17 +65,17 @@ export class RLEColumn {
                 if (postLength > 0) {
                     newRuns.push({ type: run.type, length: postLength });
                 }
-                
+
                 // Replace the single run with the new split runs
                 runs.splice(i, 1, ...newRuns);
-                
+
                 this.optimize();
                 return true;
             }
-            
+
             currentY = nextY;
         }
-        
+
         return false;
     }
 
@@ -97,15 +97,15 @@ export class RLEColumn {
         // ranges is an array of [yStart, yEnd, type], assumed sorted by yStart
         const runs = [];
         let currentY = 0;
-        
+
         for (let i = 0; i < ranges.length; i++) {
             const [yStart, yEnd, type] = ranges[i];
-            
+
             // Add air gap if there is one
             if (yStart > currentY) {
                 runs.push({ type: 0, length: yStart - currentY });
             }
-            
+
             // Add the range run
             const len = yEnd - yStart + 1;
             if (len > 0) {
@@ -113,12 +113,12 @@ export class RLEColumn {
                 currentY = yEnd + 1;
             }
         }
-        
+
         // Add final air run
         if (currentY < this.maxHeight) {
             runs.push({ type: 0, length: this.maxHeight - currentY });
         }
-        
+
         this.runs = runs;
         this.optimize();
     }

@@ -168,52 +168,56 @@ export class World {
             }
         }
     }
+    generateBlockColumn(chunk, wx, wz, lx, lz) {
+        const WATER_LEVEL = 46;
 
+        // Simple fractal noise for terrain height
+        const n1 = noise(wx * 0.01, wz * 0.01) * 32;
+        const n2 = noise(wx * 0.05, wz * 0.05) * 8;
+        const height = Math.max(10, Math.floor(n1 + n2 + 40));
+
+        const colIdx = chunk.getColumnIndex(lx, lz);
+        const col = chunk.columns[colIdx];
+
+        // Build RLE ranges directly for performance
+        if (height < WATER_LEVEL) {
+            // Ocean and seabed Sand
+            col.setRanges([
+                [0, 0, BLOCK_IDS.BEDROCK], // bedrock floor
+                [1, height - 4, BLOCK_IDS.STONE],
+                [height - 3, height, BLOCK_IDS.SAND],
+                [height + 1, WATER_LEVEL, BLOCK_IDS.WATER]
+            ]);
+        } else if (height === WATER_LEVEL) {
+            // Sand beach
+            col.setRanges([
+                [0, 0, BLOCK_IDS.BEDROCK],
+                [1, height - 4, BLOCK_IDS.STONE],
+                [height - 3, height, BLOCK_IDS.SAND]
+            ]);
+        } else {
+            // Normal grass and dirt land
+            col.setRanges([
+                [0, 0, BLOCK_IDS.BEDROCK],
+                [1, height - 4, BLOCK_IDS.STONE],
+                [height - 3, height - 1, BLOCK_IDS.DIRT],
+                [height, height, BLOCK_IDS.GRASS]
+            ]);
+        }
+    }
     generateChunkTerrain(cx, cz) {
         const chunk = this.getOrCreateChunk(cx, cz);
         const size = CONFIG.CHUNK_SIZE;
         const startX = cx * size;
         const startZ = cz * size;
-        const WATER_LEVEL = 46;
 
         for (let lx = 0; lx < size; lx++) {
             for (let lz = 0; lz < size; lz++) {
                 const wx = startX + lx;
                 const wz = startZ + lz;
 
-                // Simple fractal noise for terrain height
-                const n1 = noise(wx * 0.01, wz * 0.01) * 32;
-                const n2 = noise(wx * 0.05, wz * 0.05) * 8;
-                const height = Math.max(10, Math.floor(n1 + n2 + 40));
+                this.generateBlockColumn(chunk, wx, wz, lx, lz);
 
-                const colIdx = chunk.getColumnIndex(lx, lz);
-                const col = chunk.columns[colIdx];
-
-                // Build RLE ranges directly for performance
-                if (height < WATER_LEVEL) {
-                    // Ocean and seabed Sand
-                    col.setRanges([
-                        [0, 0, BLOCK_IDS.BEDROCK], // bedrock floor
-                        [1, height - 4, BLOCK_IDS.STONE],
-                        [height - 3, height, BLOCK_IDS.SAND],
-                        [height + 1, WATER_LEVEL, BLOCK_IDS.WATER]
-                    ]);
-                } else if (height === WATER_LEVEL) {
-                    // Sand beach
-                    col.setRanges([
-                        [0, 0, BLOCK_IDS.BEDROCK],
-                        [1, height - 4, BLOCK_IDS.STONE],
-                        [height - 3, height, BLOCK_IDS.SAND]
-                    ]);
-                } else {
-                    // Normal grass and dirt land
-                    col.setRanges([
-                        [0, 0, BLOCK_IDS.BEDROCK],
-                        [1, height - 4, BLOCK_IDS.STONE],
-                        [height - 3, height - 1, BLOCK_IDS.DIRT],
-                        [height, height, BLOCK_IDS.GRASS]
-                    ]);
-                }
             }
         }
         chunk.dirty = true;

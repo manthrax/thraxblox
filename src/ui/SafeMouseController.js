@@ -4,7 +4,7 @@ export class SafeMouseController {
      * @param {Function} onMoveCallback - Called on safe movement: (deltaX, deltaY) => {}
      * @param {number} maxDelta - Maximum allowed movement per frame before filtering (default: 300)
      */
-    constructor(element, onMoveCallback, maxDelta = 300) {
+    constructor(element, onMoveCallback, maxDelta = 500) {
         this.element = element;
         this.onMove = onMoveCallback;
         this.maxDelta = maxDelta;
