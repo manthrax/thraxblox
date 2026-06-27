@@ -272,6 +272,8 @@ export class CharacterController {
             this.isGrounded = onGround;
         }
 
+        let hitHorizontal = false;
+
         // 2. Move on X axis
         this.position.x += dx;
         bounds = this.getAABB();
@@ -286,6 +288,7 @@ export class CharacterController {
                 }
                 this.velocity.x = 0;
                 bounds = this.getAABB();
+                hitHorizontal = true;
             }
         }
 
@@ -303,6 +306,30 @@ export class CharacterController {
                 }
                 this.velocity.z = 0;
                 bounds = this.getAABB();
+                hitHorizontal = true;
+            }
+        }
+
+        // 4. Auto-jump logic
+        if (hitHorizontal && this.isGrounded && !this.isFlying && !this.isInWater()) {
+            const dirX = Math.sign(dx);
+            const dirZ = Math.sign(dz);
+            const checkDist = this.halfWidth + 0.1;
+            
+            const px = Math.floor(this.position.x + dirX * checkDist);
+            const pz = Math.floor(this.position.z + dirZ * checkDist);
+            const pyFeet = Math.floor(this.position.y + 0.5); // Leg level
+            const pyHead = Math.floor(this.position.y + 1.5); // Head level
+
+            const blockLegs = world.getBlockAt(px, pyFeet, pz);
+            const blockHead = world.getBlockAt(px, pyHead, pz);
+
+            const legsSolid = blockLegs > 0 && blockLegs !== BLOCK_IDS.WATER;
+            const headSolid = blockHead > 0 && blockHead !== BLOCK_IDS.WATER;
+
+            if (legsSolid && !headSolid) {
+                this.velocity.y = this.jumpForce;
+                this.isGrounded = false;
             }
         }
     }
