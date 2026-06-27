@@ -123,10 +123,10 @@ export class VoxelConsole {
                 const maxFogDistCmd = CONFIG.CHUNK_SIZE * CONFIG.LOAD_RADIUS;
                 if (mode === 'exp') {
                     const density = 3.0 / maxFogDistCmd;
-                    this.scene.fog = new THREE.FogExp2(0x7dd3fc, density);
+                    this.scene.fog = new THREE.FogExp2(0xdae6ff, density);
                     this.log(`Exponential Fog enabled (density: ${density.toFixed(5)})`, '#4ade80');
                 } else {
-                    this.scene.fog = new THREE.Fog(0x7dd3fc, maxFogDistCmd * 0.85, maxFogDistCmd * 0.9);
+                    this.scene.fog = new THREE.Fog(0xdae6ff, maxFogDistCmd * 0.85, maxFogDistCmd * 0.9);
                     this.log('Linear Fog enabled', '#4ade80');
                 }
             } else {

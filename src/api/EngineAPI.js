@@ -27,7 +27,7 @@ export class EngineAPI {
         this.blockBehaviors = new Map();
 
         this.wireframeMode = false;
-        this.skyColor = new THREE.Color(0x7dd3fc);
+        this.skyColor = new THREE.Color(CONFIG.SKY_HORIZON);
         this.useEqualDepthForBackfaces = true;
 
         // Repeating block actions
@@ -59,6 +59,36 @@ export class EngineAPI {
         this.blockOutline = new THREE.LineSegments(edges, outlineMat);
         this.blockOutline.visible = false;
         this.scene.add(this.blockOutline);
+
+        // Minecraft-style Gradient Sky Dome
+        const skyGeom = new THREE.SphereGeometry(450, 32, 15);
+        const skyMat = new THREE.ShaderMaterial({
+            vertexShader: `
+                varying float vY;
+                void main() {
+                    vY = position.y;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                varying float vY;
+                uniform vec3 u_zenithColor;
+                uniform vec3 u_horizonColor;
+                void main() {
+                    float h = clamp(vY / 450.0, 0.0, 1.0);
+                    vec3 skyColor = mix(u_horizonColor, u_zenithColor, pow(h, 0.6));
+                    gl_FragColor = vec4(skyColor, 1.0);
+                }
+            `,
+            uniforms: {
+                u_zenithColor: { value: new THREE.Color(CONFIG.SKY_ZENITH) },
+                u_horizonColor: { value: new THREE.Color(CONFIG.SKY_HORIZON) }
+            },
+            side: THREE.BackSide,
+            depthWrite: false
+        });
+        this.skyMesh = new THREE.Mesh(skyGeom, skyMat);
+        this.scene.add(this.skyMesh);
 
         // Expose API globally
         window.VoxelAPI = this;
@@ -444,9 +474,11 @@ export class EngineAPI {
         }
     }
 
-    // --- Unified Update Frame Tick ---
     update(dt) {
         this.time = (this.time || 0.0) + dt;
+
+        // Position sky dome around the camera
+        this.skyMesh.position.copy(this.camera.position);
 
         // 1. Tick controller physics
         this.controller.update(dt);
@@ -489,6 +521,7 @@ export class EngineAPI {
             if (!this.wasSubmerged) {
                 this.wasSubmerged = true;
                 this.underwaterPlane.visible = true;
+                this.skyMesh.visible = false; // Hide sky dome underwater
                 if (this.scene.fog) {
                     this.scene.fog.color.setHex(0x103070);
                     if (this.scene.fog.isFog) {
@@ -504,9 +537,10 @@ export class EngineAPI {
             if (this.wasSubmerged) {
                 this.wasSubmerged = false;
                 this.underwaterPlane.visible = false;
+                this.skyMesh.visible = true; // Show sky dome on land
                 const maxFogDist = CONFIG.CHUNK_SIZE * CONFIG.LOAD_RADIUS;
                 if (this.scene.fog) {
-                    this.scene.fog.color.setHex(0x7dd3fc);
+                    this.scene.fog.color.setHex(CONFIG.SKY_HORIZON); // Dynamic horizon fog color
                     if (this.scene.fog.isFog) {
                         this.scene.fog.near = maxFogDist * 0.55;
                         this.scene.fog.far = maxFogDist * 0.8;
@@ -514,7 +548,7 @@ export class EngineAPI {
                         this.scene.fog.density = 3.0 / maxFogDist;
                     }
                 }
-                this.skyColor.setHex(0x7dd3fc);
+                this.skyColor.setHex(CONFIG.SKY_HORIZON); // Dynamic horizon sky clear color
             }
         }
 

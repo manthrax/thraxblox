@@ -6,5 +6,7 @@ export const CONFIG = {
     MAX_HEIGHT: 256,
     LOAD_RADIUS: 15,
     UNLOAD_RADIUS: 17,
-    CHUNKS_PER_FRAME: 3
+    CHUNKS_PER_FRAME: 3,
+    SKY_ZENITH: 0x3a7bd5,
+    SKY_HORIZON: 0xb0d0ff
 };

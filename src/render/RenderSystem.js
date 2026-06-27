@@ -3,9 +3,9 @@ import { CONFIG } from '../config.js';
 
 export function createRenderSystem() {
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x7dd3fc); // Sky blue background
+    scene.background = new THREE.Color(CONFIG.SKY_HORIZON); // Matches sky dome horizon color
     const maxFogDist = CONFIG.CHUNK_SIZE * CONFIG.LOAD_RADIUS;
-    scene.fog = new THREE.Fog(0x7dd3fc, maxFogDist * 0.55, maxFogDist * 0.8);
+    scene.fog = new THREE.Fog(CONFIG.SKY_HORIZON, maxFogDist * 0.55, maxFogDist * 0.8);
 
     const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.rotation.order = 'YXZ'; // Important for FPS look rotation
