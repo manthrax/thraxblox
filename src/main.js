@@ -4,6 +4,7 @@ import { EngineAPI } from './api/EngineAPI.js';
 import { BLOCK_IDS } from './world/BlockRegistry.js';
 import { VoxelConsole } from './ui/Console.js';
 import { AtlasDebugger } from './ui/AtlasDebugger.js';
+import { CONFIG } from './config.js';
 
 // --- INITIALIZE GRAPHICS SYSTEM ---
 const { scene, camera, renderer } = createRenderSystem();
@@ -102,3 +103,51 @@ function animate() {
 
 // Start the game loop
 animate();
+
+// --- SETTINGS MENU UI BINDINGS ---
+const btnSettings = document.getElementById('btn-settings');
+const btnSettingsBack = document.getElementById('btn-settings-back');
+const settingsMenu = document.getElementById('settings-menu');
+const inputLoadRadius = document.getElementById('input-load-radius');
+const valLoadRadius = document.getElementById('val-load-radius');
+const blocker = document.getElementById('blocker');
+
+if (inputLoadRadius && valLoadRadius) {
+    // Sync UI with config values on load
+    inputLoadRadius.value = CONFIG.LOAD_RADIUS;
+    valLoadRadius.textContent = CONFIG.LOAD_RADIUS;
+
+    // Listen for changes
+    inputLoadRadius.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        valLoadRadius.textContent = val;
+        CONFIG.LOAD_RADIUS = val;
+        CONFIG.UNLOAD_RADIUS = val + 2;
+
+        // Immediately update fog parameters to match the new render distance
+        if (api.scene.fog && !api.wasSubmerged) {
+            const maxFogDist = CONFIG.CHUNK_SIZE * val;
+            if (api.scene.fog.isFog) {
+                api.scene.fog.near = maxFogDist * 0.55;
+                api.scene.fog.far = maxFogDist * 0.8;
+            } else if (api.scene.fog.isFogExp2) {
+                api.scene.fog.density = 3.0 / maxFogDist;
+            }
+        }
+    });
+}
+
+if (btnSettings && settingsMenu && blocker) {
+    btnSettings.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent locking pointer when clicking settings
+        settingsMenu.style.display = 'flex';
+        blocker.style.display = 'none';
+    });
+}
+
+if (btnSettingsBack && settingsMenu && blocker) {
+    btnSettingsBack.addEventListener('click', () => {
+        settingsMenu.style.display = 'none';
+        blocker.style.display = 'flex';
+    });
+}

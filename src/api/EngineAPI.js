@@ -78,6 +78,7 @@ export class EngineAPI {
                     float h = clamp(vY / 450.0, 0.0, 1.0);
                     vec3 skyColor = mix(u_horizonColor, u_zenithColor, pow(h, 0.6));
                     gl_FragColor = vec4(skyColor, 1.0);
+                    #include <colorspace_fragment>
                 }
             `,
             uniforms: {

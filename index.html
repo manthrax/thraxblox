@@ -407,6 +407,113 @@
             vertical-align: top;
             transform-origin: top center;
         }
+        .settings-trigger-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #94a3b8;
+            padding: 8px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.2s;
+            font-family: 'Outfit', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-top: 15px;
+            z-index: 25;
+        }
+
+        .settings-trigger-btn:hover {
+            background: rgba(56, 189, 248, 0.15);
+            border-color: #38bdf8;
+            color: #fff;
+            transform: translateY(-0.5px);
+        }
+
+        .menu-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            padding: 10px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: bold;
+            transition: all 0.2s;
+            user-select: none;
+            font-family: 'Outfit', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .menu-btn:hover {
+            background: rgba(56, 189, 248, 0.2);
+            border-color: #38bdf8;
+            transform: translateY(-1px);
+        }
+
+        #settings-menu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(10, 11, 15, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 21;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            cursor: default;
+        }
+
+        #settings-menu h2 {
+            font-size: 32px;
+            margin-bottom: 25px;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+
+        .settings-row {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 30px;
+            width: 320px;
+        }
+
+        .settings-row label {
+            color: #94a3b8;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .settings-row input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .settings-row input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+            transition: transform 0.1s;
+        }
+
+        .settings-row input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
     </style>
 </head>
 
@@ -481,8 +588,9 @@
     </div>
 
     <div id="blocker">
-        <h2>Click to Play</h2>
-        <p style="font-size: 13px; color: #64748b; margin-top: 4px; letter-spacing: 0.5px;">ThraxBlox by Thrax!</p>
+        <h2>ThraxBlox</h2>
+        <p style="font-size: 13px; color: #64748b; margin-top: 4px; letter-spacing: 0.5px;">Click to Play!</p>
+        <button id="btn-settings" class="settings-trigger-btn">Settings</button>
         <div id="instructions">
             Move: <span class="key">W</span><span class="key">A</span><span class="key">S</span><span
                 class="key">D</span> •
@@ -492,6 +600,16 @@
             Debug HUD: <span class="key">F3</span> •
             Break/Place: <span class="key">L/R Click</span>
         </div>
+    </div>
+
+    <!-- Settings Menu Modal Overlay -->
+    <div id="settings-menu">
+        <h2>Settings</h2>
+        <div class="settings-row">
+            <label for="input-load-radius">Render Distance: <span id="val-load-radius">12</span> chunks</label>
+            <input type="range" id="input-load-radius" min="4" max="32" value="12" step="1" />
+        </div>
+        <button id="btn-settings-back" class="menu-btn">Back</button>
     </div>
 
     <!-- Atlas Debug Overlay -->
